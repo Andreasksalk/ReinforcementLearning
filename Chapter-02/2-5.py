@@ -58,7 +58,7 @@ for h in range(100):
             selected_bandit = np.random.choice(len(q))
 
         reward = np.random.normal(bandits[selected_bandit][0], bandits[selected_bandit][1])
-
+        
         n[selected_bandit] += 1
         q[selected_bandit] += alpha * (reward - q[selected_bandit])
 
