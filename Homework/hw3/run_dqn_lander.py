@@ -1,29 +1,46 @@
-import argparse
 import gym
 from gym import wrappers
+import time
+import logz
 import os.path as osp
 import random
 import numpy as np
-import tensorflow as tf
-import tensorflow.contrib.layers as layers
+import torch
+from torch import nn
 
 import dqn
-from dqn_utils import *
+from dqn_utils import ConstantSchedule, PiecewiseSchedule, get_wrapper_by_name
 
-def lander_model(obs, num_actions, scope, reuse=False):
-    with tf.variable_scope(scope, reuse=reuse):
-        out = obs
-        with tf.variable_scope("action_value"):
-            out = layers.fully_connected(out, num_outputs=64, activation_fn=tf.nn.relu)
-            out = layers.fully_connected(out, num_outputs=64, activation_fn=tf.nn.relu)
-            out = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
 
+def weights_init(m):
+    if hasattr(m, 'weight'):
+        nn.init.orthogonal_(m.weight)
+    if hasattr(m, 'bias'):
+        nn.init.constant_(m.bias, 0)
+
+class DQN(nn.Module): # for lunar lander
+    def __init__(self, in_features, num_actions):
+        super(DQN, self).__init__()
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features, out_features=64),
+            nn.ReLU(True),
+            nn.Linear(in_features=64, out_features=64),
+            nn.ReLU(True),
+            nn.Linear(in_features=64, out_features=num_actions),
+        )
+
+        self.apply(weights_init)
+
+    def forward(self, obs):
+        out = self.classifier(obs)
         return out
 
 def lander_optimizer():
+    lr_schedule = ConstantSchedule(1e-3)
+    lr_lambda = lambda t: lr_schedule.value(t)
     return dqn.OptimizerSpec(
-        constructor=tf.train.AdamOptimizer,
-        lr_schedule=ConstantSchedule(1e-3),
+        constructor=torch.optim.Adam,
+        lr_lambda=lr_lambda,
         kwargs={}
     )
 
@@ -45,7 +62,7 @@ def lander_exploration_schedule(num_timesteps):
 def lander_kwargs():
     return {
         'optimizer_spec': lander_optimizer(),
-        'q_func': lander_model,
+        'q_func': DQN,
         'replay_buffer_size': 50000,
         'batch_size': 32,
         'gamma': 1.00,
@@ -58,9 +75,7 @@ def lander_kwargs():
     }
 
 def lander_learn(env,
-                 session,
-                 num_timesteps,
-                 seed):
+                 num_timesteps):
 
     optimizer = lander_optimizer()
     stopping_criterion = lander_stopping_criterion(num_timesteps)
@@ -68,7 +83,6 @@ def lander_learn(env,
 
     dqn.learn(
         env=env,
-        session=session,
         exploration=lander_exploration_schedule(num_timesteps),
         stopping_criterion=lander_stopping_criterion(num_timesteps),
         double_q=True,
@@ -77,40 +91,42 @@ def lander_learn(env,
     env.close()
 
 def set_global_seeds(i):
-    tf.set_random_seed(i)
+    torch.manual_seed(i)
+    if torch.cuda.is_available:
+        torch.cuda.manual_seed(i)
     np.random.seed(i)
     random.seed(i)
 
-def get_session():
-    tf.reset_default_graph()
-    tf_config = tf.ConfigProto(
-        inter_op_parallelism_threads=1,
-        intra_op_parallelism_threads=1,
-        device_count={'GPU': 0})
-    # GPUs don't significantly speed up deep Q-learning for lunar lander,
-    # since the observations are low-dimensional
-    session = tf.Session(config=tf_config)
-    return session
-
-def get_env(seed):
-    env = gym.make('LunarLander-v2')
+def get_env(env_name, exp_name, seed):
+    env = gym.make(env_name)
 
     set_global_seeds(seed)
     env.seed(seed)
 
+    # Set Up Logger
+    logdir = 'dqn_' + exp_name + '_' + env_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+    logdir = osp.join('data', logdir)
+    logdir = osp.join(logdir, '%d'%seed)
+    logz.configure_output_dir(logdir)
+    hyperparams = {'exp_name': exp_name, 'env_name': env_name}
+    logz.save_hyperparams(hyperparams)
+
     expt_dir = '/tmp/hw3_vid_dir/'
-    env = wrappers.Monitor(env, osp.join(expt_dir, "gym"), force=True)
+    env = wrappers.Monitor(env, osp.join(expt_dir, "gym"), force=True, video_callable=False)
+    
 
     return env
 
 def main():
+    # Choose Atari games.
+    env_name = 'LunarLander-v2'
+    exp_name = 'LunarLander_double_dqn' # you can use it to mark different experiments
+    
     # Run training
     seed = 4565 # you may want to randomize this
     print('random seed = %d' % seed)
-    env = get_env(seed)
-    session = get_session()
-    set_global_seeds(seed)
-    lander_learn(env, session, num_timesteps=500000, seed=seed)
+    env = get_env(env_name, exp_name, seed)
+    lander_learn(env, num_timesteps=500000)
 
 if __name__ == "__main__":
     main()

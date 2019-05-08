@@ -1,46 +1,63 @@
-import argparse
 import gym
 from gym import wrappers
+import time
+import logz
 import os.path as osp
 import random
 import numpy as np
-import tensorflow as tf
-import tensorflow.contrib.layers as layers
+import torch
+from torch import nn
 
 import dqn
-from dqn_utils import *
-from atari_wrappers import *
+from dqn_utils import PiecewiseSchedule, get_wrapper_by_name
+from atari_wrappers import wrap_deepmind_ram
 
+def weights_init(m):
+    if hasattr(m, 'weight'):
+        nn.init.xavier_uniform_(m.weight)
+    if hasattr(m, 'bias'):
+        nn.init.constant_(m.bias, 0)
+        
+class DQN(nn.Module): # for atari ram
+    def __init__(self, in_features, num_actions):
+        super(DQN, self).__init__()
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features, out_features=256),
+            nn.ReLU(True),
+            nn.Linear(in_features=256, out_features=128),
+            nn.ReLU(True),
+            nn.Linear(in_features=128, out_features=64),
+            nn.ReLU(True),
+            nn.Linear(in_features=64, out_features=num_actions),
+        )
 
-def atari_model(ram_in, num_actions, scope, reuse=False):
-    with tf.variable_scope(scope, reuse=reuse):
-        out = ram_in
-        #out = tf.concat(1,(ram_in[:,4:5],ram_in[:,8:9],ram_in[:,11:13],ram_in[:,21:22],ram_in[:,50:51], ram_in[:,60:61],ram_in[:,64:65]))
-        with tf.variable_scope("action_value"):
-            out = layers.fully_connected(out, num_outputs=256, activation_fn=tf.nn.relu)
-            out = layers.fully_connected(out, num_outputs=128, activation_fn=tf.nn.relu)
-            out = layers.fully_connected(out, num_outputs=64, activation_fn=tf.nn.relu)
-            out = layers.fully_connected(out, num_outputs=num_actions, activation_fn=None)
+        self.apply(weights_init)
 
+    def forward(self, obs):
+        out = obs.float() / 255 # convert 8-bits ram state to float in [0, 1]
+        out = self.classifier(out)
         return out
 
 def atari_learn(env,
-                session,
                 num_timesteps):
     # This is just a rough estimate
     num_iterations = float(num_timesteps) / 4.0
 
     lr_multiplier = 1.0
-    lr_schedule = PiecewiseSchedule([
-                                         (0,                   1e-4 * lr_multiplier),
-                                         (num_iterations / 10, 1e-4 * lr_multiplier),
-                                         (num_iterations / 2,  5e-5 * lr_multiplier),
-                                    ],
-                                    outside_value=5e-5 * lr_multiplier)
+    lr_schedule = PiecewiseSchedule(
+        [
+            (0,                   1e-4 * lr_multiplier),
+            (num_iterations / 10, 1e-4 * lr_multiplier),
+            (num_iterations / 2,  5e-5 * lr_multiplier),
+        ],
+        outside_value=5e-5 * lr_multiplier
+    )
+    lr_lambda = lambda t: lr_schedule.value(t)
+
     optimizer = dqn.OptimizerSpec(
-        constructor=tf.train.AdamOptimizer,
-        kwargs=dict(epsilon=1e-4),
-        lr_schedule=lr_schedule
+        constructor=torch.optim.Adam,
+        kwargs=dict(eps=1e-4),
+        lr_lambda=lr_lambda
     )
 
     def stopping_criterion(env, t):
@@ -58,9 +75,8 @@ def atari_learn(env,
 
     dqn.learn(
         env,
-        q_func=atari_model,
+        q_func=DQN,
         optimizer_spec=optimizer,
-        session=session,
         exploration=exploration_schedule,
         stopping_criterion=stopping_criterion,
         replay_buffer_size=1000000,
@@ -74,35 +90,26 @@ def atari_learn(env,
     )
     env.close()
 
-def get_available_gpus():
-    from tensorflow.python.client import device_lib
-    local_device_protos = device_lib.list_local_devices()
-    return [x.physical_device_desc for x in local_device_protos if x.device_type == 'GPU']
-
 def set_global_seeds(i):
-    try:
-        import tensorflow as tf
-    except ImportError:
-        pass
-    else:
-        tf.set_random_seed(i)
+    torch.manual_seed(i)
+    if torch.cuda.is_available:
+        torch.cuda.manual_seed(i)
     np.random.seed(i)
     random.seed(i)
 
-def get_session():
-    tf.reset_default_graph()
-    tf_config = tf.ConfigProto(
-        inter_op_parallelism_threads=1,
-        intra_op_parallelism_threads=1)
-    session = tf.Session(config=tf_config)
-    print("AVAILABLE GPUS: ", get_available_gpus())
-    return session
-
-def get_env(seed):
-    env = gym.make('Pong-ram-v0')
+def get_env(env_name, exp_name, seed):
+    env = gym.make(env_name)
 
     set_global_seeds(seed)
     env.seed(seed)
+
+    # Set Up Logger
+    logdir = 'dqn_' + exp_name + '_' + env_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")
+    logdir = osp.join('data', logdir)
+    logdir = osp.join(logdir, '%d'%seed)
+    logz.configure_output_dir(logdir)
+    hyperparams = {'exp_name': exp_name, 'env_name': env_name}
+    logz.save_hyperparams(hyperparams)
 
     expt_dir = '/tmp/hw3_vid_dir/'
     env = wrappers.Monitor(env, osp.join(expt_dir, "gym"), force=True)
@@ -111,11 +118,15 @@ def get_env(seed):
     return env
 
 def main():
+    # Choose Atari games.
+    env_name = 'Pong-ram-v0'
+    exp_name = 'Pong_double_dqn' # you can use it to mark different experiments
+    
     # Run training
     seed = 0 # Use a seed of zero (you may want to randomize the seed!)
-    env = get_env(seed)
-    session = get_session()
-    atari_learn(env, session, num_timesteps=int(4e7))
+    print('random seed = %d' % seed)
+    env = get_env(env_name, exp_name, seed)
+    atari_learn(env, num_timesteps=int(4e7))
 
 if __name__ == "__main__":
     main()

@@ -1,17 +1,18 @@
-import uuid
 import time
 import pickle
 import sys
 import gym.spaces
-import itertools
+import logz
 import numpy as np
 import random
-import tensorflow                as tf
-import tensorflow.contrib.layers as layers
+import torch
+import torch.nn.functional as F
+from torch import nn, optim
 from collections import namedtuple
-from dqn_utils import *
+from dqn_utils import LinearSchedule, ReplayBuffer, get_wrapper_by_name
 
-OptimizerSpec = namedtuple("OptimizerSpec", ["constructor", "kwargs", "lr_schedule"])
+OptimizerSpec = namedtuple("OptimizerSpec", ["constructor", "kwargs", "lr_lambda"])
+ 
 
 class QLearner(object):
 
@@ -20,7 +21,6 @@ class QLearner(object):
     env,
     q_func,
     optimizer_spec,
-    session,
     exploration=LinearSchedule(1000000, 0.1),
     stopping_criterion=None,
     replay_buffer_size=1000000,
@@ -31,7 +31,6 @@ class QLearner(object):
     frame_history_len=4,
     target_update_freq=10000,
     grad_norm_clipping=10,
-    rew_file=None,
     double_q=True,
     lander=False):
     """Run Deep Q-learning algorithm.
@@ -47,20 +46,13 @@ class QLearner(object):
     q_func: function
         Model to use for computing the q function. It should accept the
         following named arguments:
-            img_in: tf.Tensor
-                tensorflow tensor representing the input image
+            in_channels: int
+                number of channels for the input
             num_actions: int
                 number of actions
-            scope: str
-                scope in which all the model related variables
-                should be created
-            reuse: bool
-                whether previously created variables should be reused.
     optimizer_spec: OptimizerSpec
         Specifying the constructor and kwargs, as well as learning rate schedule
         for the optimizer
-    session: tf.Session
-        tensorflow session to use.
     exploration: rl_algs.deepq.utils.schedules.Schedule
         schedule for probability of chosing random action.
     stopping_criterion: (env, t) -> bool
@@ -97,83 +89,37 @@ class QLearner(object):
     self.learning_starts = learning_starts
     self.stopping_criterion = stopping_criterion
     self.env = env
-    self.session = session
     self.exploration = exploration
-    self.rew_file = str(uuid.uuid4()) + '.pkl' if rew_file is None else rew_file
-
+    self.gamma = gamma
+    self.double_q = double_q
+    self.device = torch.device('cuda' if torch.cuda.is_available else 'cpu')
+    
     ###############
     # BUILD MODEL #
     ###############
 
     if len(self.env.observation_space.shape) == 1:
         # This means we are running on low-dimensional observations (e.g. RAM)
-        input_shape = self.env.observation_space.shape
+        in_features = self.env.observation_space.shape[0]
     else:
         img_h, img_w, img_c = self.env.observation_space.shape
-        input_shape = (img_h, img_w, frame_history_len * img_c)
+        in_features = frame_history_len * img_c
     self.num_actions = self.env.action_space.n
 
-    # set up placeholders
-    # placeholder for current observation (or state)
-    self.obs_t_ph              = tf.placeholder(
-        tf.float32 if lander else tf.uint8, [None] + list(input_shape))
-    # placeholder for current action
-    self.act_t_ph              = tf.placeholder(tf.int32,   [None])
-    # placeholder for current reward
-    self.rew_t_ph              = tf.placeholder(tf.float32, [None])
-    # placeholder for next observation (or state)
-    self.obs_tp1_ph            = tf.placeholder(
-        tf.float32 if lander else tf.uint8, [None] + list(input_shape))
-    # placeholder for end of episode mask
-    # this value is 1 if the next state corresponds to the end of an episode,
-    # in which case there is no Q-value at the next state; at the end of an
-    # episode, only the current state reward contributes to the target, not the
-    # next state Q-value (i.e. target is just rew_t_ph, not rew_t_ph + gamma * q_tp1)
-    self.done_mask_ph          = tf.placeholder(tf.float32, [None])
-
-    # casting to float on GPU ensures lower data transfer times.
-    if lander:
-      obs_t_float = self.obs_t_ph
-      obs_tp1_float = self.obs_tp1_ph
-    else:
-      obs_t_float   = tf.cast(self.obs_t_ph,   tf.float32) / 255.0
-      obs_tp1_float = tf.cast(self.obs_tp1_ph, tf.float32) / 255.0
-
-    # Here, you should fill in your own code to compute the Bellman error. This requires
-    # evaluating the current and next Q-values and constructing the corresponding error.
-    # TensorFlow will differentiate this error for you, you just need to pass it to the
-    # optimizer. See assignment text for details.
-    # Your code should produce one scalar-valued tensor: total_error
-    # This will be passed to the optimizer in the provided code below.
-    # Your code should also produce two collections of variables:
-    # q_func_vars
-    # target_q_func_vars
-    # These should hold all of the variables of the Q-function network and target network,
-    # respectively. A convenient way to get these is to make use of TF's "scope" feature.
-    # For example, you can create your Q-function network with the scope "q_func" like this:
-    # <something> = q_func(obs_t_float, num_actions, scope="q_func", reuse=False)
-    # And then you can obtain the variables like this:
-    # q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
-    # Older versions of TensorFlow may require using "VARIABLES" instead of "GLOBAL_VARIABLES"
-    # Tip: use huber_loss (from dqn_utils) instead of squared error when defining self.total_error
-    ######
-
-    # YOUR CODE HERE
-
-    ######
+    # define deep Q network and target Q network
+    self.q_net = q_func(in_features, self.num_actions).to(self.device)
+    self.target_q_net = q_func(in_features, self.num_actions).to(self.device)
 
     # construct optimization op (with gradient clipping)
-    self.learning_rate = tf.placeholder(tf.float32, (), name="learning_rate")
-    optimizer = self.optimizer_spec.constructor(learning_rate=self.learning_rate, **self.optimizer_spec.kwargs)
-    self.train_fn = minimize_and_clip(optimizer, self.total_error,
-                 var_list=q_func_vars, clip_val=grad_norm_clipping)
+    parameters = self.q_net.parameters()
+    self.optimizer = self.optimizer_spec.constructor(parameters, lr=1, 
+                                                     **self.optimizer_spec.kwargs)
+    self.lr_scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, self.optimizer_spec.lr_lambda)
+    # clip_grad_norm_fn will be called before doing gradient decent
+    self.clip_grad_norm_fn = lambda : nn.utils.clip_grad_norm_(parameters, max_norm=grad_norm_clipping)
 
     # update_target_fn will be called periodically to copy Q network to target Q network
-    update_target_fn = []
-    for var, var_target in zip(sorted(q_func_vars,        key=lambda v: v.name),
-                               sorted(target_q_func_vars, key=lambda v: v.name)):
-        update_target_fn.append(var_target.assign(var))
-    self.update_target_fn = tf.group(*update_target_fn)
+    self.update_target_fn = lambda : self.target_q_net.load_state_dict(self.q_net.state_dict())
 
     # construct the replay buffer
     self.replay_buffer = ReplayBuffer(replay_buffer_size, frame_history_len, lander=lander)
@@ -189,9 +135,39 @@ class QLearner(object):
     self.last_obs = self.env.reset()
     self.log_every_n_steps = 10000
 
-    self.start_time = None
+    self.start_time = time.time()
     self.t = 0
 
+  def calc_loss(self, obs, ac, rw, nxobs, done):
+    """
+        Calculate the loss for a batch of transitions. 
+
+        Here, you should fill in your own code to compute the Bellman error. This requires
+        evaluating the current and next Q-values and constructing the corresponding error.
+
+        arguments:
+            ob: The observation for current step
+            ac: The corresponding action for current step
+            rw: The reward for each timestep
+            nxob: The observation after taking one step forward
+            done: The mask for terminal state. This value is 1 if the next state corresponds to
+                  the end of an episode, in which case there is no Q-value at the next state;
+                  at the end of an episode, only the current state reward contributes to the target,
+                  not the next state Q-value (i.e. target is just rew_t_ph, not rew_t_ph + gamma * q_tp1)
+
+            inputs are generated from self.replay_buffer.sample, you can refer the code in dqn_utils.py
+            for more details 
+
+        returns:
+            a scalar tensor represent the loss
+
+        Hint: use smooth_l1_loss (a.k.a huber_loss) instead of mean squared error.
+              use self.double_q to switch between double DQN and vanilla DQN.
+    """
+    
+    # YOUR CODE HERE
+    
+    
   def stopping_criterion_met(self):
     return self.stopping_criterion is not None and self.stopping_criterion(self.env, self.t)
 
@@ -229,51 +205,40 @@ class QLearner(object):
     #####
 
     # YOUR CODE HERE
+    
 
   def update_model(self):
     ### 3. Perform experience replay and train the network.
     # note that this is only done if the replay buffer contains enough samples
     # for us to learn something useful -- until then, the model will not be
     # initialized and random actions should be taken
+    self.lr_scheduler.step()
+    
     if (self.t > self.learning_starts and \
         self.t % self.learning_freq == 0 and \
         self.replay_buffer.can_sample(self.batch_size)):
+      
       # Here, you should perform training. Training consists of four steps:
       # 3.a: use the replay buffer to sample a batch of transitions (see the
       # replay buffer code for function definition, each batch that you sample
       # should consist of current observations, current actions, rewards,
       # next observations, and done indicator).
-      # 3.b: initialize the model if it has not been initialized yet; to do
-      # that, call
-      #    initialize_interdependent_variables(self.session, tf.global_variables(), {
-      #        self.obs_t_ph: obs_t_batch,
-      #        self.obs_tp1_ph: obs_tp1_batch,
-      #    })
-      # where obs_t_batch and obs_tp1_batch are the batches of observations at
-      # the current and next time step. The boolean variable model_initialized
-      # indicates whether or not the model has been initialized.
-      # Remember that you have to update the target network too (see 3.d)!
-      # 3.c: train the model. To do this, you'll need to use the self.train_fn and
-      # self.total_error ops that were created earlier: self.total_error is what you
-      # created to compute the total Bellman error in a batch, and self.train_fn
+      # 3.b: set the self.model_initialized to True. Because the newwork in starting
+      # to train, and you will use it to take action in self.step_env.
+      # 3.c: train the model. To do this, you'll need to use the self.optimizer and
+      # self.calc_loss that were created earlier: self.calc_loss is what you
+      # created to compute the total Bellman error in a batch, and self.optimizer
       # will actually perform a gradient step and update the network parameters
-      # to reduce total_error. When calling self.session.run on these you'll need to
-      # populate the following placeholders:
-      # self.obs_t_ph
-      # self.act_t_ph
-      # self.rew_t_ph
-      # self.obs_tp1_ph
-      # self.done_mask_ph
-      # (this is needed for computing self.total_error)
-      # self.learning_rate -- you can get this from self.optimizer_spec.lr_schedule.value(t)
-      # (this is needed by the optimizer to choose the learning rate)
-      # 3.d: periodically update the target network by calling
-      # self.session.run(self.update_target_fn)
+      # to reduce the loss. 
+      # Before your optimizer take step, don`t forget to call self.clip_grad_norm_fn
+      # to perform gradient clipping.
+      # 3.d: periodically update the target network by calling self.update_target_fn
       # you should update every target_update_freq steps, and you may find the
       # variable self.num_param_updates useful for this (it was initialized to 0)
       #####
-
+      
       # YOUR CODE HERE
+      
 
       self.num_param_updates += 1
 
@@ -289,22 +254,16 @@ class QLearner(object):
       self.best_mean_episode_reward = max(self.best_mean_episode_reward, self.mean_episode_reward)
 
     if self.t % self.log_every_n_steps == 0 and self.model_initialized:
-      print("Timestep %d" % (self.t,))
-      print("mean reward (100 episodes) %f" % self.mean_episode_reward)
-      print("best mean reward %f" % self.best_mean_episode_reward)
-      print("episodes %d" % len(episode_rewards))
-      print("exploration %f" % self.exploration.value(self.t))
-      print("learning_rate %f" % self.optimizer_spec.lr_schedule.value(self.t))
-      if self.start_time is not None:
-        print("running time %f" % ((time.time() - self.start_time) / 60.))
-
-      self.start_time = time.time()
-
-      sys.stdout.flush()
-
-      with open(self.rew_file, 'wb') as f:
-        pickle.dump(episode_rewards, f, pickle.HIGHEST_PROTOCOL)
-
+      logz.log_tabular("TimeStep", self.t)
+      logz.log_tabular("MeanReturn", self.mean_episode_reward)
+      logz.log_tabular("BestMeanReturn", max(self.best_mean_episode_reward, self.mean_episode_reward))
+      logz.log_tabular("Episodes", len(episode_rewards))
+      logz.log_tabular("Exploration", self.exploration.value(self.t))
+      logz.log_tabular("LearningRate", self.optimizer_spec.lr_lambda(self.t))
+      logz.log_tabular("Time", (time.time() - self.start_time) / 60.)
+      logz.dump_tabular()
+      logz.save_pytorch_model(self.q_net)
+      
 def learn(*args, **kwargs):
   alg = QLearner(*args, **kwargs)
   while not alg.stopping_criterion_met():

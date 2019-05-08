@@ -48,25 +48,13 @@ the --legend flag and then provide a title for each logdir.
 
 """
 
-def plot_data(data, time="Iteration", value="AverageReturn", combine=False):
+def plot_data(data, value="AverageReturn"):
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
-    plt.figure(figsize=(16, 9))
+
     sns.set(style="darkgrid", font_scale=1.5)
-    if not combine:
-        sns.tsplot(data=data, time=time, value=value, unit="Unit", condition="Condition")
-    else:
-        df1 = data.loc[:, [time, value[0], 'Condition']]
-        df1['Statistics'] = value[0]
-        df1.rename(columns={value[0]:'Value', 'Condition':'ExpName'}, inplace = True)
-        df2 = data.loc[:, [time, value[1], 'Condition']]
-        df2['Statistics'] = value[1]
-        df2.rename(columns={value[1]:'Value', 'Condition':'ExpName'}, inplace = True)
-        data = pd.concat([df1, df2], ignore_index=True)
-        sns.lineplot(x=time, y='Value', hue='ExpName', style='Statistics', data=data)
-        
+    sns.tsplot(data=data, time="Iteration", value=value, unit="Unit", condition="Condition")
     plt.legend(loc='best').draggable()
-    plt.savefig('result.png', bbox_inches='tight')
     plt.show()
 
 
@@ -104,9 +92,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('logdir', nargs='*')
     parser.add_argument('--legend', nargs='*')
-    parser.add_argument('--time', type=str, default='Iteration')
     parser.add_argument('--value', default='AverageReturn', nargs='*')
-    parser.add_argument('--combine', action='store_true')
     args = parser.parse_args()
 
     use_legend = False
@@ -123,18 +109,12 @@ def main():
         for logdir in args.logdir:
             data += get_datasets(logdir)
 
-    time = args.time
-            
     if isinstance(args.value, list):
         values = args.value
     else:
         values = [args.value]
-
-    if args.combine and len(values) == 2:
-        plot_data(data, time=time, value=values, combine=True)
-    else:
-        for value in values:
-            plot_data(data, time=time, value=value, combine=False)
+    for value in values:
+        plot_data(data, value=value)
 
 if __name__ == "__main__":
     main()
