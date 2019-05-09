@@ -33,10 +33,10 @@ import torchvision.transforms as T
 # Utilities
 #============================================================================================#
 
-def build_mlp(input_size, output_size, n_layers, hidden_size, activation=F.tanh):
+def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.Tanh):
     """
         Builds a feedforward neural network
-        
+
         arguments:
             input_size: size of the input layer
             output_size: size of the output layer
@@ -52,12 +52,10 @@ def build_mlp(input_size, output_size, n_layers, hidden_size, activation=F.tanh)
     """
     layers = []
     
-    for i in range (n_layers):
-        if i == n_layers-1:
-            layers.append([nn.Linear(input_size,output_size), activation()])
-        else:    
-            layers.append([nn.Linear(input_size,hidden_size), activation()])
-            input_size = hidden_size
+    for _ in range(n_layers):
+        layers += [nn.Linear(input_size, hidden_size), activation()]
+        input_size = hidden_size
+    layers += [nn.Linear(hidden_size, output_size)]
             
     return nn.Sequential(*layers).apply(weights_init)
 
@@ -80,7 +78,9 @@ class PolicyNet(nn.Module):
     def __init__(self, neural_network_args):
         super(PolicyNet, self).__init__()
         self.ob_dim = neural_network_args['ob_dim']
+        print(self.ob_dim)
         self.ac_dim = neural_network_args['ac_dim']
+        print(self.ac_dim)
         self.discrete = neural_network_args['discrete']
         self.hidden_size = neural_network_args['size']
         self.n_layers = neural_network_args['actor_n_layers']
@@ -204,8 +204,12 @@ class Agent(object):
         
                  This reduces the problem to just sampling z. (Hint: use torch.normal!)
         """
+
         ts_ob_no = torch.from_numpy(ob_no).float()
-        
+        #ts_ob_no = ob_no
+        print(ts_ob_no.size())
+        #print("AC dim" + ac_dim.size() )
+
         if self.discrete:
             ts_logits_na = self.policy_net(ts_ob_no)
             # YOUR HW2 CODE HERE
@@ -377,7 +381,7 @@ class Agent(object):
             for _ in range(self.num_grad_steps_per_target_update):
                 V = self.value_net(ob_no).view(-1)
                 self.critic_optimizer.zero_grad()
-                critic_loss = F.mse_loss.mse_loss(V, target)
+                critic_loss = F.mse_loss(V, target)
                 critic_loss.backward()
                 self.critic_optimizer.step()
         
