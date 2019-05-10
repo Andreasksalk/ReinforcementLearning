@@ -51,7 +51,7 @@ def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.Tanh
         Hint: use nn.Linear
     """
     layers = []
-    
+
     for _ in range(n_layers):
         layers += [nn.Linear(input_size, hidden_size), activation()]
         input_size = hidden_size
@@ -78,9 +78,9 @@ class PolicyNet(nn.Module):
     def __init__(self, neural_network_args):
         super(PolicyNet, self).__init__()
         self.ob_dim = neural_network_args['ob_dim']
-        print(self.ob_dim)
+        #print(self.ob_dim)
         self.ac_dim = neural_network_args['ac_dim']
-        print(self.ac_dim)
+        #print(self.ac_dim)
         self.discrete = neural_network_args['discrete']
         self.hidden_size = neural_network_args['size']
         self.n_layers = neural_network_args['actor_n_layers']
@@ -207,7 +207,7 @@ class Agent(object):
 
         ts_ob_no = torch.from_numpy(ob_no).float()
         #ts_ob_no = ob_no
-        print(ts_ob_no.size())
+        #print(ts_ob_no.size())
         #print("AC dim" + ac_dim.size() )
 
         if self.discrete:
@@ -279,7 +279,7 @@ class Agent(object):
                 env.render()
                 time.sleep(0.1)
             obs.append(ob)
-            ac = self.sample_action(ob[-1]) # YOUR HW2 CODE HERE
+            ac = self.sample_action(ob[None]) # YOUR HW2 CODE HERE
             ac = ac[0]
             acs.append(ac)
             ob, rew, done, _ = env.step(ac)
@@ -367,23 +367,32 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing the target
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
+
         
         
         # For-looped because of bootstrapped target values
-        
-        
-        
-        
+
+        print(1)
         for i in range(self.num_target_updates):
             with torch.no_grad():
+                print(2)
                 V_next = self.value_net(next_ob_no).view(-1)
+                print(3)
+            print(3)
             target = re_n + (1 - terminal_n) * self.gamma * V_next
+            print(4)
             for _ in range(self.num_grad_steps_per_target_update):
                 V = self.value_net(ob_no).view(-1)
+                print(5)
                 self.critic_optimizer.zero_grad()
+                print(5)
                 critic_loss = F.mse_loss(V, target)
+                print(7)
                 critic_loss.backward()
+                print(8)
                 self.critic_optimizer.step()
+                print(9)
+
         
         
         
@@ -518,19 +527,25 @@ def train_AC(
         re_n = torch.from_numpy(re_n)
         next_ob_no = np.concatenate([path["next_observation"] for path in paths])
         next_ob_no = torch.from_numpy(next_ob_no)
+        #print(type(next_ob_no))
+        #print(next_ob_no.size())
         
         terminal_n = np.concatenate([path["terminal"] for path in paths])
-        terminal_n = torch.from_numpy(terminal_n)
+        #terminal_n = torch.from_numpy(terminal_n)
 
         # Call tensorflow operations to:
         # (1) update the critic, by calling agent.update_critic
         # (2) use the updated critic to compute the advantage by, calling agent.estimate_advantage
         # (3) use the estimated advantage values to update the actor, by calling agent.update_actor
         # YOUR CODE HERE
-        
+
+        print(1)
         agent.update_critic(ob_no,next_ob_no,re_n,terminal_n)
+        print(100)
         adv_n = agent.estimate_advantage(ob_no,next_ob_no,re_n,terminal_n)
+        print(3)
         agent.update_actor(ob_no,ac_na,adv_n)
+        print(4)
         
         # Log diagnostics
         ob_no = ob_no.numpy()
@@ -538,9 +553,12 @@ def train_AC(
         re_n = re_n.numpy()
         next_ob_no = next_ob_no.numpy()
         adv_n = adv_n.numpy()
+        print(5)
 
         returns = [path["reward"].sum() for path in paths]
+        print(6)
         ep_lengths = [pathlength(path) for path in paths]
+        print(7)
         logz.log_tabular("Time", time.time() - start)
         logz.log_tabular("Iteration", itr)
         logz.log_tabular("AverageReturn", np.mean(returns))
