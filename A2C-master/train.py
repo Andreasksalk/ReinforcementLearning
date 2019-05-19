@@ -10,6 +10,13 @@ from torch.autograd import Variable
 
 from utils import mean_std_groups
 
+def get_screen(x):
+    state = np.array(x)
+    state = state.transpose((2, 0, 1))
+    state = torch.from_numpy(state)
+    state = state.float() / 255
+    return state.unsqueeze(0)
+
 def train(args, net, optimizer, env, cuda):
     obs = env.reset()
 
@@ -24,14 +31,14 @@ def train(args, net, optimizer, env, cuda):
     plot_timer = 0
     while total_steps < args.total_steps:
         for _ in range(args.rollout_steps):
-            obs = Variable(torch.from_numpy(obs.transpose((0, 3, 1, 2))).float() / 255.)
+            obs = get_screen(obs)
             if cuda: obs = obs.cuda()
 
             # network forward pass
             policies, values = net(obs)
 
             probs = Fnn.softmax(policies)
-            actions = probs.multinomial().data
+            actions = probs.multinomial(1).data
 
             # gather env data, reset done envs and update their obs
             obs, rewards, dones, _ = env.step(actions.cpu().numpy())
@@ -70,7 +77,7 @@ def train(args, net, optimizer, env, cuda):
 
             steps.append((rewards, masks, actions, policies, values))
 
-        final_obs = Variable(torch.from_numpy(obs.transpose((0, 3, 1, 2))).float() / 255.)
+        final_obs = get_screen(obs)
         if cuda: final_obs = final_obs.cuda()
         _, final_values = net(final_obs)
         steps.append((None, None, None, None, final_values))

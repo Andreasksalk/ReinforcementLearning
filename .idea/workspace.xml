@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4f75fcbe-5ca5-4865-a492-ae2609d99c78" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Actor_Critic-Pong.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Actor_Critic-Pong.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/A2C-master/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/A2C-master/train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -39,13 +38,25 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/A2C-master/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="301">
-              <caret line="39" column="36" selection-start-line="39" selection-start-column="36" selection-end-line="39" selection-end-column="36" />
+            <state relative-caret-position="615">
+              <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/A2C-master/train.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-367">
+              <caret line="40" column="41" selection-start-line="40" selection-start-column="41" selection-end-line="40" selection-end-column="41" />
+              <folding>
+                <element signature="e#0#11#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -71,6 +82,7 @@
       <list>
         <option value="$PROJECT_DIR$/Homework/hw3/train_ac_f18.py" />
         <option value="$PROJECT_DIR$/A2C-master/main.py" />
+        <option value="$PROJECT_DIR$/A2C-master/train.py" />
       </list>
     </option>
   </component>
@@ -104,6 +116,11 @@
             <path>
               <item name="ReinforcementLearning" type="b2602c69:ProjectViewProjectNode" />
               <item name="ReinforcementLearning" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="ReinforcementLearning" type="b2602c69:ProjectViewProjectNode" />
+              <item name="ReinforcementLearning" type="462c0819:PsiDirectoryNode" />
+              <item name="A2C-master" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="ReinforcementLearning" type="b2602c69:ProjectViewProjectNode" />
@@ -156,18 +173,18 @@
       <option name="presentableId" value="Default" />
       <updated>1557350444663</updated>
       <workItem from="1557350446107" duration="8005000" />
-      <workItem from="1558180977459" duration="234000" />
+      <workItem from="1558180977459" duration="613000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="8239000" />
+    <option name="totallyTimeSpent" value="8618000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="20" y="43" width="1400" height="766" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2533137" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2533137" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -181,7 +198,7 @@
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="11" visible="true" weight="0.16765578" />
+      <window_info anchor="bottom" id="Terminal" order="11" visible="true" weight="0.16765578" />
       <window_info anchor="bottom" id="Python Console" order="12" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -206,10 +223,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/A2C-master/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="301">
-          <caret line="39" column="36" selection-start-line="39" selection-start-column="36" selection-end-line="39" selection-end-column="36" />
+        <state relative-caret-position="615">
+          <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/A2C-master/train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-367">
+          <caret line="40" column="41" selection-start-line="40" selection-start-column="41" selection-end-line="40" selection-end-column="41" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
           </folding>
         </state>
       </provider>
