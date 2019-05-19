@@ -9,6 +9,9 @@ from models import AtariCNN
 from train import train
 from wrappers import *
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 parser = argparse.ArgumentParser(description='A2C (Advantage Actor-Critic)')
 parser.add_argument('env_name', type=str, help='Gym environment id')
 parser.add_argument('--no-cuda', action='store_true', help='use to disable available CUDA')
@@ -44,6 +47,6 @@ net = AtariCNN(venv.action_space.n)
 optimizer = optim.Adam(net.parameters(), lr=args.lr)
 
 cuda = torch.cuda.is_available() and not args.no_cuda
-if cuda: net = net.cuda()
+#if cuda: net = net.cuda()
 
-train(args, net, optimizer, venv, cuda)
+train(args, net, optimizer, venv)

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4f75fcbe-5ca5-4865-a492-ae2609d99c78" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/A2C-master/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/A2C-master/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/A2C-master/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/A2C-master/train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -25,44 +26,7 @@
     <select />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Homework/hw3/train_ac_f18.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5340">
-              <caret line="377" column="24" selection-start-line="377" selection-start-column="24" selection-end-line="377" selection-end-column="24" />
-              <folding>
-                <element signature="e#335#353#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/A2C-master/main.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="615">
-              <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
-              <folding>
-                <element signature="e#0#15#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/A2C-master/train.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-367">
-              <caret line="40" column="41" selection-start-line="40" selection-start-column="41" selection-end-line="40" selection-end-column="41" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
@@ -131,7 +95,7 @@
               <item name="ReinforcementLearning" type="b2602c69:ProjectViewProjectNode" />
               <item name="ReinforcementLearning" type="462c0819:PsiDirectoryNode" />
               <item name="Homework" type="462c0819:PsiDirectoryNode" />
-              <item name="hw3" type="462c0819:PsiDirectoryNode" />
+              <item name="hw4" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -173,16 +137,15 @@
       <option name="presentableId" value="Default" />
       <updated>1557350444663</updated>
       <workItem from="1557350446107" duration="8005000" />
-      <workItem from="1558180977459" duration="613000" />
+      <workItem from="1558180977459" duration="1709000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="8618000" />
+    <option name="totallyTimeSpent" value="9714000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="20" y="43" width="1400" height="766" extended-state="0" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2533137" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -211,32 +174,32 @@
     <option name="version" value="1" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Homework/hw3/train_ac_f18.py">
+    <entry file="file://$PROJECT_DIR$/A2C-master/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5340">
-          <caret line="377" column="24" selection-start-line="377" selection-start-column="24" selection-end-line="377" selection-end-column="24" />
+        <state relative-caret-position="232">
+          <caret line="51" column="13" selection-start-line="51" selection-start-column="13" selection-end-line="51" selection-end-column="13" />
           <folding>
-            <element signature="e#335#353#0" expanded="true" />
+            <element signature="e#0#11#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/A2C-master/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="615">
-          <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
+        <state relative-caret-position="409">
+          <caret line="51" column="32" lean-forward="true" selection-start-line="51" selection-start-column="32" selection-end-line="51" selection-end-column="32" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/A2C-master/train.py">
+    <entry file="file://$PROJECT_DIR$/Homework/hw3/train_ac_f18.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-367">
-          <caret line="40" column="41" selection-start-line="40" selection-start-column="41" selection-end-line="40" selection-end-column="41" />
+        <state relative-caret-position="484">
+          <caret line="377" column="24" selection-start-line="377" selection-start-column="24" selection-end-line="377" selection-end-column="24" />
           <folding>
-            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#335#353#0" expanded="true" />
           </folding>
         </state>
       </provider>

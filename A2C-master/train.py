@@ -10,6 +10,9 @@ from torch.autograd import Variable
 
 from utils import mean_std_groups
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def get_screen(x):
     state = np.array(x)
     state = state.transpose((2, 0, 1))
@@ -17,7 +20,7 @@ def get_screen(x):
     state = state.float() / 255
     return state.unsqueeze(0)
 
-def train(args, net, optimizer, env, cuda):
+def train(args, net, optimizer, env):
     obs = env.reset()
 
     if args.plot_reward:
@@ -32,7 +35,7 @@ def train(args, net, optimizer, env, cuda):
     while total_steps < args.total_steps:
         for _ in range(args.rollout_steps):
             obs = get_screen(obs)
-            if cuda: obs = obs.cuda()
+            #if cuda: obs = obs.cuda()
 
             # network forward pass
             policies, values = net(obs)
@@ -44,45 +47,47 @@ def train(args, net, optimizer, env, cuda):
             obs, rewards, dones, _ = env.step(actions.cpu().numpy())
 
             # reset the LSTM state for done envs
-            masks = (1. - torch.from_numpy(np.array(dones, dtype=np.float32))).unsqueeze(1)
-            if cuda: masks = masks.cuda()
+            rewards = (torch.tensor([rewards], dtype=torch.float, device=device)).unsqueeze(-1)
+            masks = (torch.tensor([1 - dones], dtype=torch.float, device=device)).unsqueeze(-1)
+            #masks = (1. - torch.from_numpy(np.array(dones, dtype=np.float32)))
+            #if cuda: masks = masks.cuda()
 
             total_steps += args.num_workers
-            for i, done in enumerate(dones):
-                ep_rewards[i] += rewards[i]
-                if done:
-                    if args.plot_reward:
-                        total_steps_plt.append(total_steps)
-                        ep_reward_plt.append(ep_rewards[i])
-                    ep_rewards[i] = 0
+            #for i, done in enumerate(dones):
+            #    ep_rewards[i] += rewards[i]
+            #    if done:
+            #        if args.plot_reward:
+            #            total_steps_plt.append(total_steps)
+            #            ep_reward_plt.append(ep_rewards[i])
+            #        ep_rewards[i] = 0
+            #
+            #if args.plot_reward:
+            #    plot_timer += args.num_workers # time on total steps
+            #    if plot_timer == 100000:
+            #        x_means, _, y_means, y_stds = mean_std_groups(np.array(total_steps_plt), np.array(ep_reward_plt), args.plot_group_size)
+            #        fig = plt.figure()
+            #        fig.set_size_inches(8, 6)
+            #        plt.ticklabel_format(axis='x', style='sci', scilimits=(-2, 6))
+            #        plt.errorbar(x_means, y_means, yerr=y_stds, ecolor='xkcd:blue', fmt='xkcd:black', capsize=5, elinewidth=1.5, mew=1.5, linewidth=1.5)
+            #        plt.title('Training progress (%s)' % args.env_name)
+            #        plt.xlabel('Total steps')
+            #        plt.ylabel('Episode reward')
+            #        plt.savefig('ep_reward.png', dpi=200)
+            #        plt.clf()
+            #        plt.close()
+            #        plot_timer = 0
 
-            if args.plot_reward:
-                plot_timer += args.num_workers # time on total steps
-                if plot_timer == 100000:
-                    x_means, _, y_means, y_stds = mean_std_groups(np.array(total_steps_plt), np.array(ep_reward_plt), args.plot_group_size)
-                    fig = plt.figure()
-                    fig.set_size_inches(8, 6)
-                    plt.ticklabel_format(axis='x', style='sci', scilimits=(-2, 6))
-                    plt.errorbar(x_means, y_means, yerr=y_stds, ecolor='xkcd:blue', fmt='xkcd:black', capsize=5, elinewidth=1.5, mew=1.5, linewidth=1.5)
-                    plt.title('Training progress (%s)' % args.env_name)
-                    plt.xlabel('Total steps')
-                    plt.ylabel('Episode reward')
-                    plt.savefig('ep_reward.png', dpi=200)
-                    plt.clf()
-                    plt.close()
-                    plot_timer = 0
-
-            rewards = torch.from_numpy(rewards).float().unsqueeze(1)
-            if cuda: rewards = rewards.cuda()
+            #rewards = torch.from_numpy(rewards).float().unsqueeze(1)
+            #if cuda: rewards = rewards.cuda()
 
             steps.append((rewards, masks, actions, policies, values))
 
         final_obs = get_screen(obs)
-        if cuda: final_obs = final_obs.cuda()
+        #if cuda: final_obs = final_obs.cuda()
         _, final_values = net(final_obs)
         steps.append((None, None, None, None, final_values))
 
-        actions, policies, values, returns, advantages = process_rollout(args, steps, cuda)
+        actions, policies, values, returns, advantages = process_rollout(args, steps)
 
         # calculate action probabilities
         probs = Fnn.softmax(policies)
@@ -105,13 +110,13 @@ def train(args, net, optimizer, env, cuda):
 
     env.close()
 
-def process_rollout(args, steps, cuda):
+def process_rollout(args, steps):
     # bootstrap discounted returns with final value estimates
     _, _, _, _, last_values = steps[-1]
     returns = last_values.data
 
     advantages = torch.zeros(args.num_workers, 1)
-    if cuda: advantages = advantages.cuda()
+    #if cuda: advantages = advantages.cuda()
 
     out = [None] * (len(steps) - 1)
 
