@@ -3,7 +3,6 @@ Original code from John Schulman for CS294 Deep Reinforcement Learning Spring 20
 Adapted for CS294-112 Fall 2017 by Abhishek Gupta and Joshua Achiam
 Adapted for CS294-112 Fall 2018 by Soroush Nasiriany, Sid Reddy, and Greg Kahn
 Adapted for pytorch version by Ning Dai
-Modified by Andreas K. Salk and Frederik Toftegaard, DTU
 """
 import numpy as np
 import torch
@@ -15,20 +14,6 @@ import inspect
 from torch.multiprocessing import Process
 from torch import nn, optim
 
-
-import matplotlib
-import matplotlib.pyplot as plt
-from collections import namedtuple
-from itertools import count
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-import torch.distributions as dist
-import torchvision.transforms as T
-
-
 #============================================================================================#
 # Utilities
 #============================================================================================#
@@ -36,7 +21,7 @@ import torchvision.transforms as T
 def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.Tanh):
     """
         Builds a feedforward neural network
-
+        
         arguments:
             input_size: size of the input layer
             output_size: size of the output layer
@@ -51,12 +36,12 @@ def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.Tanh
         Hint: use nn.Linear
     """
     layers = []
-
+    # YOUR HW2 CODE HERE
     for _ in range(n_layers):
         layers += [nn.Linear(input_size, hidden_size), activation()]
         input_size = hidden_size
     layers += [nn.Linear(hidden_size, output_size)]
-            
+
     return nn.Sequential(*layers).apply(weights_init)
 
 def weights_init(m):
@@ -78,9 +63,7 @@ class PolicyNet(nn.Module):
     def __init__(self, neural_network_args):
         super(PolicyNet, self).__init__()
         self.ob_dim = neural_network_args['ob_dim']
-        #print(self.ob_dim)
         self.ac_dim = neural_network_args['ac_dim']
-        #print(self.ac_dim)
         self.discrete = neural_network_args['discrete']
         self.hidden_size = neural_network_args['size']
         self.n_layers = neural_network_args['actor_n_layers']
@@ -99,10 +82,11 @@ class PolicyNet(nn.Module):
                     distribution over actions. log_std should just be a trainable
                     variable, not a network output.
         """
+        # YOUR HW2 CODE HERE
         if self.discrete:
-            self.mlp = build_mlp(self.ob_dim,self.ac_dim,self.n_layers,self.hidden_size)
+            self.mlp = build_mlp(self.ob_dim, self.ac_dim, self.n_layers, self.hidden_size)
         else:
-            self.mlp = build_mlp(self.ob_dim,self.ac_dim,self.n_layers,self.hidden_size)
+            self.mlp = build_mlp(self.ob_dim, self.ac_dim, self.n_layers, self.hidden_size)
             self.ts_logstd = nn.Parameter(torch.randn((self.ac_dim, )))
             
     #========================================================================================#
@@ -204,21 +188,17 @@ class Agent(object):
         
                  This reduces the problem to just sampling z. (Hint: use torch.normal!)
         """
-
         ts_ob_no = torch.from_numpy(ob_no).float()
-        #ts_ob_no = ob_no
-        #print(ts_ob_no.size())
-        #print("AC dim" + ac_dim.size() )
 
         if self.discrete:
             ts_logits_na = self.policy_net(ts_ob_no)
             # YOUR HW2 CODE HERE
-            ts_probs = F.log_softmax(ts_logits_na, dim =-1).exp()
+            ts_probs = nn.functional.log_softmax(ts_logits_na, dim=-1).exp()
             ts_sampled_ac = torch.multinomial(ts_probs, num_samples=1).view(-1)
         else:
             ts_mean, ts_logstd = self.policy_net(ts_ob_no)
             # YOUR HW2 CODE HERE
-            ts_sampled_ac = dist.normal(ts_mean,ts_logstd)
+            ts_sampled_ac = torch.normal(mean=ts_mean, std=ts_logstd.exp())
 
         sampled_ac = ts_sampled_ac.numpy()
             
@@ -249,11 +229,11 @@ class Agent(object):
         if self.discrete:
             ts_logits_na = policy_parameters
             # YOUR HW2 CODE HERE
-            ts_logprob_n = dist.Categorical(logits=ts_logits_na).log_prob(ts_ac_na)
+            ts_logprob_n = torch.distributions.Categorical(logits=ts_logits_na).log_prob(ts_ac_na)
         else:
             ts_mean, ts_logstd = policy_parameters
             # YOUR HW2 CODE HERE
-            ts_logprob_n = dist.MultivariateNormal(loc = ts_mean,scale_tril = ts_logstd).log_prob(ts_ac_na)
+            ts_logprob_n = torch.distributions.Normal(loc=ts_mean, scale=ts_logstd.exp()).log_prob(ts_ac_na) .sum(-1)
             
         return ts_logprob_n
 
@@ -329,15 +309,13 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing Q(s, a)
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
-        
         with torch.no_grad():
-            V = self.value_net(ob_no).view(-1)
-            V_next = self.value_net(next_ob_no).view(-1)
-        
-        adv_n = re_n + (1-terminal_n)*self.gamma+V_next-V
+            V_n = self.value_net(torch.from_numpy(ob_no)).view(-1).numpy()
+            next_V_n = self.value_net(torch.from_numpy(next_ob_no)).view(-1).numpy()
+        adv_n = re_n + (1 - terminal_n) * self.gamma * next_V_n - V_n
         
         if self.normalize_advantages:
-            adv_n = (adv_n-torch.mean(adv_n))/ (torch.std(adv_n)+1e-7) # YOUR HW2 CODE HERE
+            adv_n = (adv_n - np.mean(adv_n)) / (np.std(adv_n) + 1e-7) # YOUR HW2 CODE HERE
         return adv_n
 
     def update_critic(self, ob_no, next_ob_no, re_n, terminal_n):
@@ -367,35 +345,18 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing the target
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
-
-        
-        
-        # For-looped because of bootstrapped target values
-
-        print(1)
-        for i in range(self.num_target_updates):
+        ts_ob_no, ts_next_ob_no, ts_re_n, ts_terminal_n = map(lambda x: torch.from_numpy(x),
+                                                              [ob_no, next_ob_no, re_n, terminal_n])
+        for _ in range(self.num_target_updates):
             with torch.no_grad():
-                print(2)
-                V_next = self.value_net(next_ob_no).view(-1)
-                print(3)
-            print(3)
-            target = re_n + (1 - terminal_n) * self.gamma * V_next
-            print(4)
+                ts_next_V_n = self.value_net(ts_next_ob_no).view(-1)
+            ts_target_n = ts_re_n + (1 - ts_terminal_n) * self.gamma * ts_next_V_n
             for _ in range(self.num_grad_steps_per_target_update):
-                V = self.value_net(ob_no).view(-1)
-                print(5)
+                ts_V_n = self.value_net(ts_ob_no).view(-1)
                 self.critic_optimizer.zero_grad()
-                print(5)
-                critic_loss = F.mse_loss(V, target)
-                print(7)
+                critic_loss = nn.functional.mse_loss(ts_V_n, ts_target_n)
                 critic_loss.backward()
-                print(8)
                 self.critic_optimizer.step()
-                print(9)
-
-        
-        
-        
                 
     def update_actor(self, ob_no, ac_na, adv_n):
         """ 
@@ -411,18 +372,20 @@ class Agent(object):
                 nothing
 
         """
+        # convert numpy array to pytorch tensor
+        ts_ob_no, ts_ac_na, ts_adv_n = map(lambda x: torch.from_numpy(x), [ob_no, ac_na, adv_n])
 
         # The policy takes in an observation and produces a distribution over the action space
-        policy_parameters = self.policy_net(ob_no)
+        policy_parameters = self.policy_net(ts_ob_no)
 
         # We can compute the logprob of the actions that were actually taken by the policy
         # This is used in the loss function.
-        logprob_n = self.get_log_prob(policy_parameters, ac_na)
+        ts_logprob_n = self.get_log_prob(policy_parameters, ts_ac_na)
 
         # clean the gradient for model parameters
         self.actor_optimizer.zero_grad()
         
-        actor_loss = torch.mean(-(logprob_n * adv_n))
+        actor_loss = - (ts_logprob_n * ts_adv_n).mean() 
         actor_loss.backward()
         
         self.actor_optimizer.step()
@@ -520,45 +483,23 @@ def train_AC(
         # Build arrays for observation, action for the policy gradient update by concatenating 
         # across paths
         ob_no = np.concatenate([path["observation"] for path in paths])
-        ob_no = torch.from_numpy(ob_no)
         ac_na = np.concatenate([path["action"] for path in paths])
-        ac_na = torch.from_numpy(ac_na)
         re_n = np.concatenate([path["reward"] for path in paths])
-        re_n = torch.from_numpy(re_n)
         next_ob_no = np.concatenate([path["next_observation"] for path in paths])
-        next_ob_no = torch.from_numpy(next_ob_no)
-        #print(type(next_ob_no))
-        #print(next_ob_no.size())
-        
         terminal_n = np.concatenate([path["terminal"] for path in paths])
-        #terminal_n = torch.from_numpy(terminal_n)
 
         # Call tensorflow operations to:
         # (1) update the critic, by calling agent.update_critic
         # (2) use the updated critic to compute the advantage by, calling agent.estimate_advantage
         # (3) use the estimated advantage values to update the actor, by calling agent.update_actor
         # YOUR CODE HERE
+        agent.update_critic(ob_no, next_ob_no, re_n, terminal_n)
+        adv_n = agent.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n)
+        agent.update_actor(ob_no, ac_na, adv_n)
 
-        print(1)
-        agent.update_critic(ob_no,next_ob_no,re_n,terminal_n)
-        print(100)
-        adv_n = agent.estimate_advantage(ob_no,next_ob_no,re_n,terminal_n)
-        print(3)
-        agent.update_actor(ob_no,ac_na,adv_n)
-        print(4)
-        
         # Log diagnostics
-        ob_no = ob_no.numpy()
-        ac_na = ac_na.numpy()
-        re_n = re_n.numpy()
-        next_ob_no = next_ob_no.numpy()
-        adv_n = adv_n.numpy()
-        print(5)
-
         returns = [path["reward"].sum() for path in paths]
-        print(6)
         ep_lengths = [pathlength(path) for path in paths]
-        print(7)
         logz.log_tabular("Time", time.time() - start)
         logz.log_tabular("Iteration", itr)
         logz.log_tabular("AverageReturn", np.mean(returns))
