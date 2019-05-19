@@ -3,6 +3,7 @@ Original code from John Schulman for CS294 Deep Reinforcement Learning Spring 20
 Adapted for CS294-112 Fall 2017 by Abhishek Gupta and Joshua Achiam
 Adapted for CS294-112 Fall 2018 by Soroush Nasiriany, Sid Reddy, and Greg Kahn
 Adapted for pytorch version by Ning Dai
+Updated for DTU Course Deep Reinforcement Learning 2019 by Andreas K. Salk and Frederik Toftegaard
 """
 import numpy as np
 import torch
@@ -55,7 +56,7 @@ def setup_logger(logdir, locals_):
     # Configure output directory for logging
     logz.configure_output_dir(logdir)
     # Log experimental parameters
-    args = inspect.getargspec(train_AC)[0]
+    args = inspect.getfullargspec(train_AC)[0]
     hyperparams = {k: locals_[k] if k in locals_ else None for k in args}
     logz.save_hyperparams(hyperparams)
 
