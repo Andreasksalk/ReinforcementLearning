@@ -1,3 +1,4 @@
+import argparse
 import gym
 from gym import wrappers
 import time
@@ -41,7 +42,7 @@ def lander_optimizer():
     return dqn.OptimizerSpec(
         constructor=torch.optim.Adam,
         lr_lambda=lr_lambda,
-        kwargs={}
+        kwargs=dict(amsgrad=True)
     )
 
 def lander_stopping_criterion(num_timesteps):
@@ -120,7 +121,7 @@ def get_env(env_name, exp_name, seed):
 def main():
     # Choose Atari games.
     env_name = 'LunarLander-v2'
-    exp_name = 'LunarLander_double_dqn' # you can use it to mark different experiments
+    exp_name = 'orthogonal_init' # you can use it to mark different experiments
     
     # Run training
     seed = 4565 # you may want to randomize this

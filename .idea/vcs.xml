@@ -3,5 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/A2C-master/baselines" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/PyTorch-A2C" vcs="Git" />
   </component>
 </project>

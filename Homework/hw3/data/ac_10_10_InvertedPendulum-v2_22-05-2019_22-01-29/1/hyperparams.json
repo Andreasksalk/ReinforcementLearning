@@ -6,7 +6,7 @@
 "env_name"	:	"InvertedPendulum-v2",
 "exp_name"	:	"10_10",
 "gamma"	:	0.95,
-"logdir"	:	"data/ac_10_10_InvertedPendulum-v2_19-05-2019_19-16-53/1",
+"logdir"	:	"data/ac_10_10_InvertedPendulum-v2_22-05-2019_22-01-29/1",
 "max_path_length"	:	1000.0,
 "min_timesteps_per_batch"	:	5000,
 "n_iter"	:	100,

@@ -1,3 +1,4 @@
+import argparse
 import gym
 from gym import wrappers
 import time
@@ -15,7 +16,7 @@ from atari_wrappers import wrap_deepmind
 def weights_init(m):
     if hasattr(m, 'weight'):
         nn.init.xavier_normal_(m.weight)
-    if hasattr(m, 'bias'):
+    if hasattr(m, 'bias') and m.bias is not None:
         nn.init.constant_(m.bias, 0)
 
 class DQN(nn.Module): # for atari
@@ -37,6 +38,7 @@ class DQN(nn.Module): # for atari
         )
 
         self.apply(weights_init)
+        
 
     def forward(self, obs):
         out = obs.float() / 255 # convert 8-bits RGB color to float in [0, 1]
@@ -133,7 +135,7 @@ def main():
     exp_name = 'Pong_double_dqn' # you can use it to mark different experiments
 
     # Run training
-    seed = random.randint(0, 9999)
+    seed = 2333 #random.randint(0, 9999)
     print('random seed = %d' % seed)
     env = get_env(env_name, exp_name, seed)
     atari_learn(env, num_timesteps=2e8)

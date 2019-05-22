@@ -3,6 +3,7 @@ import pickle
 import sys
 import gym.spaces
 import logz
+import itertools
 import numpy as np
 import random
 import torch
@@ -166,6 +167,22 @@ class QLearner(object):
     """
     
     # YOUR CODE HERE
+    ts_obs, ts_ac, ts_rw, ts_nxobs, ts_done = map(lambda x: torch.from_numpy(x).to(self.device),
+                                                  [obs, ac, rw, nxobs, done])
+
+    ts_ac = ts_ac.long().view(-1, 1)
+    
+    with torch.no_grad():
+      if not self.double_q:
+        ts_max_ac = self.target_q_net(ts_nxobs).argmax(-1, keepdim=True)
+      else:
+        ts_max_ac = self.q_net(ts_nxobs).argmax(-1, keepdim=True)
+      expected_Q = ts_rw + (1 - ts_done) * self.gamma * self.target_q_net(ts_nxobs).gather(-1, ts_max_ac).view(-1)
+    pred_Q = self.q_net(ts_obs).gather(-1, ts_ac).view(-1)
+
+    total_error = F.smooth_l1_loss(pred_Q, expected_Q)
+
+    return total_error
     
     
   def stopping_criterion_met(self):
@@ -205,7 +222,21 @@ class QLearner(object):
     #####
 
     # YOUR CODE HERE
-    
+    idx = self.replay_buffer.store_frame(self.last_obs)
+    ts_obs = torch.from_numpy(self.replay_buffer.encode_recent_observation()[None]).to(self.device)
+
+    if not self.model_initialized or (random.random() < self.exploration.value(self.t)):
+      action = random.randint(0, self.num_actions - 1)
+    else:
+      action = self.q_net(ts_obs).view(-1).argmax().item()
+
+    new_obs, reward, done, _ = self.env.step(action)
+
+    self.replay_buffer.store_effect(idx, action, reward, done)
+    self.last_obs = new_obs
+
+    if done:
+      self.last_obs = self.env.reset()
 
   def update_model(self):
     ### 3. Perform experience replay and train the network.
@@ -238,9 +269,21 @@ class QLearner(object):
       #####
       
       # YOUR CODE HERE
-      
+      obs, ac, rw, nxobs, done = self.replay_buffer.sample(self.batch_size)
+
+      if not self.model_initialized:
+        self.model_initialized = True
+
+      loss = self.calc_loss(obs, ac, rw, nxobs, done)
+
+      self.optimizer.zero_grad()
+      loss.backward()
+      self.clip_grad_norm_fn()
+      self.optimizer.step()
 
       self.num_param_updates += 1
+      if self.num_param_updates % self.target_update_freq == 0:
+        self.update_target_fn()
 
     self.t += 1
 
