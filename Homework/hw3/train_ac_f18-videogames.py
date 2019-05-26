@@ -3,6 +3,7 @@ Original code from John Schulman for CS294 Deep Reinforcement Learning Spring 20
 Adapted for CS294-112 Fall 2017 by Abhishek Gupta and Joshua Achiam
 Adapted for CS294-112 Fall 2018 by Soroush Nasiriany, Sid Reddy, and Greg Kahn
 Adapted for pytorch version by Ning Dai
+Updated for DTU Course Deep Reinforcement Learning 2019 by Andreas K. Salk and Frederik Toftegaard
 """
 import numpy as np
 import torch
@@ -13,12 +14,14 @@ import time
 import inspect
 from torch.multiprocessing import Process
 from torch import nn, optim
+from wrappers import *
+import run_dqn_atari
 
 #============================================================================================#
 # Utilities
 #============================================================================================#
 
-def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.Tanh):
+def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.ReLU()):
     """
         Builds a feedforward neural network
         
@@ -37,16 +40,26 @@ def build_mlp(input_size, output_size, n_layers, hidden_size, activation=nn.Tanh
     """
     layers = []
     # YOUR HW2 CODE HERE
-    for _ in range(n_layers):
-        layers += [nn.Linear(input_size, hidden_size), activation()]
-        input_size = hidden_size
-    layers += [nn.Linear(hidden_size, output_size)]
+    #for _ in range(n_layers):
+    #    layers += [nn.Linear(input_size, hidden_size), activation()]
+    #    input_size = hidden_size
+    layers += [nn.Conv2d(4, 32, kernel_size=8, stride=4)]
+    layers += [nn.Conv2d(32, 64, kernel_size=4, stride=2)]
+    layers += [nn.Conv2d(64, 64, kernel_size=3, stride=1)]
 
     return nn.Sequential(*layers).apply(weights_init)
 
 def weights_init(m):
     if hasattr(m, 'weight'):
         nn.init.xavier_uniform_(m.weight)
+
+# For reshaping video game environments
+def get_screen(x):
+    state = np.array(x)
+    state = state.transpose((2, 0, 1))
+    state = torch.from_numpy(state)
+    state = state.float() / 255
+    return state.unsqueeze(0)
 
 def pathlength(path):
     return len(path["reward"])
@@ -58,86 +71,6 @@ def setup_logger(logdir, locals_):
     args = inspect.getfullargspec(train_AC)[0]
     hyperparams = {k: locals_[k] if k in locals_ else None for k in args}
     logz.save_hyperparams(hyperparams)
-
-class PolicyNet(nn.Module):
-    def __init__(self, neural_network_args):
-        super(PolicyNet, self).__init__()
-        self.ob_dim = neural_network_args['ob_dim']
-        self.ac_dim = neural_network_args['ac_dim']
-        self.discrete = neural_network_args['discrete']
-        self.hidden_size = neural_network_args['size']
-        self.n_layers = neural_network_args['actor_n_layers']
-
-        self.define_model_components()
-        
-    def define_model_components(self):
-        """
-            Define the parameters of policy network here.
-            You can use any instance of nn.Module or nn.Parameter.
-
-            Hint: use the 'build_mlp' function above
-                In the discrete case, model should output logits of a categorical distribution
-                    over the actions
-                In the continuous case, model should output a tuple (mean, log_std) of a Gaussian
-                    distribution over actions. log_std should just be a trainable
-                    variable, not a network output.
-        """
-        # YOUR HW2 CODE HERE
-        if self.discrete:
-            self.mlp = build_mlp(self.ob_dim, self.ac_dim, self.n_layers, self.hidden_size)
-        else:
-            self.mlp = build_mlp(self.ob_dim, self.ac_dim, self.n_layers, self.hidden_size)
-            self.ts_logstd = nn.Parameter(torch.randn((self.ac_dim, )))
-            
-    #========================================================================================#
-    #                           ----------PROBLEM 2----------
-    #========================================================================================#
-    """
-        Notes on notation:
-        
-        Pytorch tensor variables have the prefix ts_, to distinguish them from the numpy array
-        variables that are computed later in the function
-    
-        Prefixes and suffixes:
-        ob - observation 
-        ac - action
-        _no - this tensor should have shape (batch size, observation dim)
-        _na - this tensor should have shape (batch size, action dim)
-        _n  - this tensor should have shape (batch size)
-            
-        Note: batch size is defined at runtime
-    """
-    def forward(self, ts_ob_no):
-        """
-            Define forward pass for policy network.
-
-            arguments:
-                ts_ob_no: (batch_size, self.ob_dim) 
-
-            returns:
-                the parameters of the policy.
-
-                if discrete, the parameters are the logits of a categorical distribution
-                    over the actions
-                    ts_logits_na: (batch_size, self.ac_dim)
-
-                if continuous, the parameters are a tuple (mean, log_std) of a Gaussian
-                    distribution over actions. log_std should just be a trainable
-                    variable, not a network output.
-                    ts_mean: (batch_size, self.ac_dim)
-                    st_logstd: (self.ac_dim,)
-        
-            Hint: use the components you defined in self.define_model_components
-        """
-        if self.discrete:
-            # YOUR HW2 CODE HERE
-            ts_logits_na = self.mlp(ts_ob_no)
-            return ts_logits_na
-        else:
-            # YOUR HW2 CODE HERE
-            ts_mean = self.mlp(ts_ob_no)
-            ts_logstd = self.ts_logstd
-            return (ts_mean, ts_logstd)
     
 #============================================================================================#
 # Actor Critic
@@ -163,8 +96,8 @@ class Agent(object):
         self.gamma = estimate_advantage_args['gamma']
         self.normalize_advantages = estimate_advantage_args['normalize_advantages']
 
-        self.policy_net = PolicyNet(neural_network_args)
-        self.value_net = build_mlp(self.ob_dim, 1, self.critic_n_layers, self.hidden_size)
+        self.policy_net = run_dqn_atari.DQN(self.ob_dim, self.ac_dim)
+        self.value_net = run_dqn_atari.DQN(self.ob_dim, 1)
 
         self.actor_optimizer = optim.Adam(self.policy_net.parameters(), lr=self.actor_learning_rate)
         self.critic_optimizer = optim.Adam(self.value_net.parameters(), lr=self.critic_learning_rate)
@@ -263,6 +196,7 @@ class Agent(object):
             ac = ac[0]
             acs.append(ac)
             ob, rew, done, _ = env.step(ac)
+            ob = ob
             # add the observation after taking a step to next_obs
             # YOUR CODE HERE
             next_obs.append(ob)
@@ -422,6 +356,7 @@ def train_AC(
 
     # Make the gym environment
     env = gym.make(env_name)
+    #env = make_env(env)
 
     # Set random seeds
     torch.manual_seed(seed)

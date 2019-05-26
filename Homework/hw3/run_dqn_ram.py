@@ -1,3 +1,4 @@
+import argparse
 import gym
 from gym import wrappers
 import time
@@ -15,8 +16,8 @@ from atari_wrappers import wrap_deepmind_ram
 def weights_init(m):
     if hasattr(m, 'weight'):
         nn.init.xavier_uniform_(m.weight)
-    if hasattr(m, 'bias'):
-        nn.init.constant_(m.bias, 0)
+    #if hasattr(m, 'bias'):
+    #    nn.init.constant_(m.bias, 0)
         
 class DQN(nn.Module): # for atari ram
     def __init__(self, in_features, num_actions):
@@ -56,7 +57,7 @@ def atari_learn(env,
 
     optimizer = dqn.OptimizerSpec(
         constructor=torch.optim.Adam,
-        kwargs=dict(eps=1e-4),
+        kwargs=dict(eps=1e-4, amsgrad=True),
         lr_lambda=lr_lambda
     )
 
@@ -120,7 +121,7 @@ def get_env(env_name, exp_name, seed):
 def main():
     # Choose Atari games.
     env_name = 'Pong-ram-v0'
-    exp_name = 'Pong_double_dqn' # you can use it to mark different experiments
+    exp_name = 'default' # you can use it to mark different experiments
     
     # Run training
     seed = 0 # Use a seed of zero (you may want to randomize the seed!)
