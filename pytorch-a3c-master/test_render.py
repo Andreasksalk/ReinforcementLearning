@@ -7,11 +7,23 @@ import torch.nn.functional as F
 from envs import create_atari_env
 from model import ActorCritic
 
+import argparse
+
 import gym
 
 seed = 1
 rank = 16
-env_name = 'PongDeterministic-v4'
+
+parser = argparse.ArgumentParser(description='A3C')
+parser.add_argument('--env-name',type=str, default = 'PongDeterministic-v4',
+                    help = 'default environment is PongDeterminisitc-v4')
+parser.add_argument('--model', type = str, default = 'actor.pkl',
+                    help = 'default model to load is actor.pkl')
+
+args = parser.parse_args()
+
+
+env_name = args.env_name
 
 torch.manual_seed(seed + rank)
 
@@ -22,7 +34,7 @@ env.seed(seed + rank)
 #env = make_env(env)
 
 model = ActorCritic(env.observation_space.shape[0], env.action_space)
-testModel = torch.load('C:/Users/Frederik/Documents/GitHub/ReinforcementLearning/pytorch-a3c-master/results/actor.pkl')
+testModel = torch.load('C:/Users/Frederik/Documents/GitHub/ReinforcementLearning/pytorch-a3c-master/results/' + args.model)
 #model.load_state_dict(testModel.state_dict())
 
 model.eval()
