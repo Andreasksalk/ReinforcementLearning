@@ -186,7 +186,9 @@ class RandomPolicy(object):
     def __init__(self, env):
         self._action_space_low = env.action_space.low
         self._action_space_high = env.action_space.high
+        #self.env = env
 
     def get_action(self, state):
         return np.random.uniform(self._action_space_low, self._action_space_high)
+        #return np.random.choice(self.env.action_space.n)
 

@@ -1,7 +1,7 @@
 import os
 import argparse
 import time
-
+import gym
 from half_cheetah_env import HalfCheetahEnv
 from logger import logger
 from model_based_rl import ModelBasedRL
@@ -26,9 +26,8 @@ assert not os.path.exists(exp_dir),\
 os.makedirs(exp_dir, exist_ok=True)
 logger.setup(exp_name, os.path.join(exp_dir, 'log.txt'), 'debug')
 
-env = {
-    'HalfCheetah': HalfCheetahEnv()
-}[args.env]
+env = { 'HalfCheetah': HalfCheetahEnv() }[args.env]
+#env = gym.make("Pong-ram-v0")
 
 mbrl = ModelBasedRL(env=env,
                     render=args.render,
