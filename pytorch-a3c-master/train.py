@@ -36,7 +36,7 @@ def train(rank, args, shared_model, counter, lock, optimizer=None):
     start_time = time.time()
 
     episode_length = 0
-    while time.strftime("%H",time.gmtime(time.time() - start_time)) != ("10" or "11"):
+    while time.strftime("%H",time.gmtime(time.time() - start_time)) != ("09" or "10"):
         # Sync with the shared model
         model.load_state_dict(shared_model.state_dict())
         if done:

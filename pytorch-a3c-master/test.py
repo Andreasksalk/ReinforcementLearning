@@ -26,9 +26,9 @@ def test(rank, args, shared_model, counter):
     start_time = time.time()
 
     # a quick hack to prevent the agent from stucking
-    actions = deque(maxlen=1000)
+    actions = deque(maxlen=3000)
     episode_length = 0
-    while time.strftime("%H",time.gmtime(time.time() - start_time)) != ("10" or "11"):
+    while time.strftime("%H",time.gmtime(time.time() - start_time)) != ("09" or "10"):
         episode_length += 1
         # Sync with the shared model
         if done:
@@ -50,8 +50,8 @@ def test(rank, args, shared_model, counter):
 
         # a quick hack to prevent the agent from stucking
         actions.append(action[0, 0])
-       # if actions.count(actions[0]) == actions.maxlen:
-       #     done = True
+        if actions.count(actions[0]) == actions.maxlen:
+            done = True
 
         if done:
             print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}".format(
