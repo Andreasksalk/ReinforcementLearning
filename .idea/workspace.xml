@@ -3,7 +3,35 @@
   <component name="ChangeListManager">
     <list default="true" id="4f75fcbe-5ca5-4865-a492-ae2609d99c78" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/A2C/A2C_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/A2C/A2C_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Actor_Critic-Pong-val-Copy4.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Actor_Critic-Pong-val-Copy4.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/A2C/A2C_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/A2C/A2C_train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/A2C/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/A2C/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Actor-Critic.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Actor_Critic-Pong-val-Copy4.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Actor_Critic-Pong-val.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Actor_Critic-Pong.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Homework/hw3/half_cheetah.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Homework/hw3/mujoco.rar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Homework/hw3/train_ac_f18-1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Untitled.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/envs.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mujocoSALK.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/A3CNoFrameskip.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/A3CResults.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/A3CResultsExcel.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/LICENSE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/envs.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/images/PongReward.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/model.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/my_optim.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/results/actor.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/results/actorNoFrame.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/test.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/test_render.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch-a3c-master/train.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/wrappers.py" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -42,31 +70,36 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/A2C/A2C_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="198">
-              <caret line="29" column="10" selection-start-line="29" selection-start-column="10" selection-end-line="29" selection-end-column="10" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Homework/hw3/run_dqn_atari.py">
-          <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="345">
-              <caret line="23" column="113" selection-start-line="23" selection-start-column="113" selection-end-line="23" selection-end-column="113" />
+              <caret line="23" column="30" selection-start-line="23" selection-start-column="30" selection-end-line="23" selection-end-column="30" />
               <folding>
-                <element signature="e#0#15#0" expanded="true" />
+                <element signature="e#1#28#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Homework/hw3/wrappers.py">
+        <entry file="file://$PROJECT_DIR$/A2C/A2C_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-221" />
+            <state relative-caret-position="146">
+              <caret line="55" column="27" selection-start-line="55" selection-start-column="27" selection-end-line="55" selection-end-column="27" />
+              <folding>
+                <element signature="e#50#64#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/A2C/model.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1155">
+              <caret line="77" column="38" selection-start-line="77" selection-start-column="38" selection-end-line="77" selection-end-column="38" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
           </provider>
         </entry>
       </file>
@@ -118,6 +151,8 @@
         <option value="$PROJECT_DIR$/model.py" />
         <option value="$PROJECT_DIR$/A2C_test.py" />
         <option value="$PROJECT_DIR$/A2C_train.py" />
+        <option value="$PROJECT_DIR$/A2C/A2C_train.py" />
+        <option value="$PROJECT_DIR$/A2C/model.py" />
         <option value="$PROJECT_DIR$/A2C/A2C_test.py" />
       </list>
     </option>
@@ -156,6 +191,12 @@
               <item name="ReinforcementLearning" type="462c0819:PsiDirectoryNode" />
               <item name="Homework" type="462c0819:PsiDirectoryNode" />
               <item name="hw3" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="ReinforcementLearning" type="b2602c69:ProjectViewProjectNode" />
+              <item name="ReinforcementLearning" type="462c0819:PsiDirectoryNode" />
+              <item name="Homework" type="462c0819:PsiDirectoryNode" />
+              <item name="hw4" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -228,18 +269,18 @@
       <updated>1557350444663</updated>
       <workItem from="1557350446107" duration="8005000" />
       <workItem from="1558180977459" duration="6179000" />
-      <workItem from="1558341343707" duration="15315000" />
+      <workItem from="1558341343707" duration="18800000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="29499000" />
+    <option name="totallyTimeSpent" value="32984000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="20" y="131" width="1400" height="678" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2569956" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2569956" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -253,7 +294,7 @@
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="11" visible="true" weight="0.19283277" />
+      <window_info anchor="bottom" id="Terminal" order="11" visible="true" weight="0.19283277" />
       <window_info anchor="bottom" id="Python Console" order="12" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -379,16 +420,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Homework/hw4/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="434">
-          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Downloads/A2C-master/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="327">
@@ -429,11 +460,6 @@
         <state relative-caret-position="-3969" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Homework/hw3/wrappers.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-221" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/A2C-train.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
@@ -472,16 +498,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Homework/hw3/run_dqn_atari.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" column="113" selection-start-line="23" selection-start-column="113" selection-end-line="23" selection-end-column="113" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Homework/hw3/train_ac_f18.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-5717">
@@ -492,12 +508,55 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Homework/hw4/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="141">
+          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/A2C/A2C_train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="146">
+          <caret line="55" column="27" selection-start-line="55" selection-start-column="27" selection-end-line="55" selection-end-column="27" />
+          <folding>
+            <element signature="e#50#64#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Homework/hw3/wrappers.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Homework/hw3/run_dqn_atari.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="23" column="113" selection-start-line="23" selection-start-column="113" selection-end-line="23" selection-end-column="113" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/A2C/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1155">
+          <caret line="77" column="38" selection-start-line="77" selection-start-column="38" selection-end-line="77" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/A2C/A2C_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="29" column="10" selection-start-line="29" selection-start-column="10" selection-end-line="29" selection-end-column="10" />
+        <state relative-caret-position="345">
+          <caret line="23" column="30" selection-start-line="23" selection-start-column="30" selection-end-line="23" selection-end-column="30" />
           <folding>
-            <element signature="e#0#14#0" expanded="true" />
+            <element signature="e#1#28#0" expanded="true" />
           </folding>
         </state>
       </provider>

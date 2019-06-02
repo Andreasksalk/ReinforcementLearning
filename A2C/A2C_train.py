@@ -5,15 +5,13 @@
 
 
 import gym, os
-from itertools import count
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.distributions import Multinomial
-import torchvision.transforms as T
 from datetime import datetime
+# Stable baselines is a further development of openAI baselines
 from stable_baselines import logger
 from stable_baselines.bench import Monitor
 from stable_baselines.common import set_global_seeds
@@ -30,7 +28,7 @@ seed = 123
 num_envs = 16
 num_frames = 4
 
-def custom_atari_env(env_id, num_env, seed, wrapper_kwargs=None, start_index=0,
+def custom_dummy_env(env_id, num_env, seed, wrapper_kwargs=None, start_index=0,
                      allow_early_resets=True):
     if wrapper_kwargs is None:
         wrapper_kwargs = {}
@@ -49,40 +47,35 @@ def custom_atari_env(env_id, num_env, seed, wrapper_kwargs=None, start_index=0,
     set_global_seeds(seed)
     return DummyVecEnv([make_env(i + start_index) for i in range(num_env)])
 
-
-env = custom_atari_env('BreakoutNoFrameskip-v4', num_env=num_envs, seed=42)
+# Creating a dummy vec env since it allows to bypass an error in SubprocVecEnv from baselines
+env = custom_dummy_env('PongNoFrameskip-v0', num_env=num_envs, seed=42)
 env = make_atari_env('PongNoFrameskip-v0', num_env=num_envs, seed=42)
 env = VecFrameStack(env, n_stack=num_frames)
 
 
-# Helper function
-
-# In[3]:
-
-
-
-def process_rollout(gamma = 0.99, lambd = 1.0):
+def controller(gamma = 0.99):
     _, _, _, _, last_values = steps[-1]
     returns = last_values.data
 
-    advantages = torch.zeros(num_envs, 1)
-    #if cuda: advantages = advantages.cuda()
+
+    # Create advantage tensor with the length of virtual environments.
+    advantage = torch.zeros(num_envs, 1)
 
     out = [None] * (len(steps) - 1)
 
-    # run Generalized Advantage Estimation, calculate returns, advantages
+    # Takes the bootstrapped values from all the environments and calculates adv.
     for t in reversed(range(len(steps) - 1)):
-        rewards, masks, actions, policies, values = steps[t]
+        reward, mask, action, logit, value = steps[t]
         _, _, _, _, next_values = steps[t + 1]
 
-        returns = rewards + returns * gamma * masks
+        returns = reward + returns * gamma * mask
 
-        deltas = rewards + next_values.data * gamma * masks - values.data
-        advantages = advantages * gamma * lambd * masks + deltas
+        delta = reward + next_values.data * gamma * mask - value.data
+        advantage = advantage * gamma * mask + delta
 
-        out[t] = actions, policies, values, returns, advantages
+        out[t] = actions, logit, values, returns, advantage
 
-    # return data as batched Tensors, Variables
+    # return data as batched Tensors
     return map(lambda x: torch.cat(x, 0), zip(*out))
 
 
@@ -91,7 +84,7 @@ def process_rollout(gamma = 0.99, lambd = 1.0):
 learn_rate = 1e-4
 val_coeff = 0.5
 ent_coeff = 0.01
-rollout_steps = 50
+bootstrap_steps = 50
 max_steps = 5e7
 
 # Get number of actions from gym action space
@@ -106,62 +99,62 @@ total_steps_list = []
 envs_list = []
 
 steps = []
-ep_rewards = [0.] * num_envs
+ep_rewards = [0] * num_envs
 total_steps = 0
 
 state = env.reset()
 while total_steps < max_steps:
-    for _ in range(rollout_steps):
+    for _ in range(bootstrap_steps):
+        # Reshaping tensor to have (batch, frames, width, height), and normalizing color values
         state = torch.from_numpy(state.transpose((0, 3, 1, 2))).float() / 255.
         logit, values = actor_critic(state)
-        
+
+        # Get the probabilites of taking an action in a given state and sample 1 action per env
         probs = F.softmax(logit)
-        actions = probs.multinomial(1).data
+        action = probs.multinomial(1).data
         
-        state, rewards, dones, _ = env.step(actions.cpu().numpy())
+        state, reward, boolean, _ = env.step(action.cpu().numpy())
 
 
         total_steps += num_envs
-        for i, done in enumerate(dones):
-                ep_rewards[i] += rewards[i]
+        for i, done in enumerate(boolean):
+                ep_rewards[i] += reward[i]
                 if done:
-                    #print(dones)
+                    # if an environments is done, append its values
                     scores_all_envs.append(ep_rewards[i])
                     total_steps_list.append(total_steps)
                     envs_list.append(i)
+                    # Print first environment as tester
                     if i == 0:
                         print('Timestamp: {}, Steps: {}, Score env: {}, Env no.: {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), total_steps, ep_rewards[i], i+1))
                     ep_rewards[i] = 0
-                    #print(ep_rewards)
-        masks = (1. - torch.from_numpy(np.array(dones, dtype=np.float32))).unsqueeze(1)
-        rewards = torch.from_numpy(rewards).float().unsqueeze(1)
-        steps.append((rewards, masks, actions, logit, values))
+        mask = (1. - torch.from_numpy(np.array(dones, dtype=np.float32))).unsqueeze(1)
+        reward = torch.from_numpy(reward).float().unsqueeze(1)
+        steps.append((reward, mask, action, logit, values))
 
     final_state = torch.from_numpy(state.transpose((0, 3, 1, 2))).float() / 255.
-    _, final_values = actor_critic(final_state)
-    steps.append((None, None, None, None, final_values))
-    actions, logit, values, returns, advantages = process_rollout()
+    _, final_value = actor_critic(final_state)
+    steps.append((None, None, None, None, final_value))
+    action, logit, value, returns, advantage = controller()
     
     probs = F.softmax(logit)
     log_probs = F.log_softmax(logit)
-    log_action_probs = log_probs.gather(-1, actions)
+    log_action_probs = log_probs.gather(-1, action)
 
-    policy_loss = (-log_action_probs * advantages).sum()
-    value_loss = (0.5*(values - returns) ** 2.).sum()
+    # Calculate loss from the probs and advantage
+    actor_loss = (-log_action_probs * advantage).sum()
+    critic_loss = (0.5*(value - returns) ** 2).sum()
     entropy_loss = (log_probs * probs).sum()
 
-    ac_loss = (policy_loss + value_loss * val_coeff + entropy_loss * ent_coeff)
+
+    # Increase entropy loss to encourage exploration
+    ac_loss = (actor_loss + critic_loss * val_coeff + entropy_loss * ent_coeff)
 
     ac_loss.backward()
-    nn.utils.clip_grad_norm(actor_critic.parameters(), 50.)
+    #nn.utils.clip_grad_norm(actor_critic.parameters(), 50)
     optimizer.step()
     optimizer.zero_grad()
     steps = []
-    
-
-
-# In[5]:
-
 
 env.close()
 torch.save(actor_critic, 'results/actor_critic.pkl')
