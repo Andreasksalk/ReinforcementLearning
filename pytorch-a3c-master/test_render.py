@@ -46,7 +46,7 @@ done = True
 
 start_time = time.time()
 
-n_iter = 5
+n_iter = 2
 n = 0
 max_episode_length = 100000
 
