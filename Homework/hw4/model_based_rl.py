@@ -86,8 +86,9 @@ class ModelBasedRL(object):
         ### PROBLEM 1
         ### YOUR CODE HERE
         for i in range(self._training_epochs):
-            for states, actions, next_states, rewards, dones in dataset.random_iterator(self._training_batch_size):
-                losses.append(self._policy.train_step(states, actions, next_states))
+            for states, actions, next_states, _ in dataset.random_iterator(self._training_batch_size):
+                rand_loss = self._policy.train_step(states, actions, next_states)
+                losses.append(rand_loss)
 
         logger.record_tabular('TrainingLossStart', losses[0])
         logger.record_tabular('TrainingLossFinal', losses[-1])
@@ -127,10 +128,9 @@ class ModelBasedRL(object):
 
             ### PROBLEM 1
             ### YOUR CODE HERE
-            pred_state = states[0]
-            for act in actions:
-                pred_state = self._policy.predict(pred_state, act)
-                pred_states.append(pred_state)
+            first_state = states[0]
+            for action in actions:
+                pred_states.append(self._policy.predict(first_state, action))
 
             states = np.asarray(states)
             pred_states = np.asarray(pred_states)

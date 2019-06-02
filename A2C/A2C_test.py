@@ -1,21 +1,9 @@
-import gym, os
-import numpy as np
 from itertools import count
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from stable_baselines import logger
-from stable_baselines.bench import Monitor
-from stable_baselines.common import set_global_seeds
-from stable_baselines.common.atari_wrappers import make_atari, wrap_deepmind
 from stable_baselines.common.cmd_util import make_atari_env
-from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.common.vec_env import VecFrameStack
 from model import ActorCritic
-from gym import wrappers
-
-
-import matplotlib.pyplot as plt
 
 
 

@@ -1,8 +1,6 @@
 import numpy as np
-#from itertools import count
 import torch
 import torch.nn as nn
-#import torch.nn.functional as F
 
 def ortho_weights(shape, scale=1.):
     """ PyTorch port of ortho_init from baselines.a2c.utils """
@@ -46,15 +44,14 @@ def game_initializer(module):
                 param.data.zero_()
 
 
-# Creating two seperate networks the actor and the critic
-
-# In[4]:
-
+#Creating one architecture for both the actor an the critic
+# Actor output = num_actions, critic output = 1
 
 class ActorCritic(nn.Module):
     def __init__(self, num_actions):
         super().__init__()
 
+        # Architecture from the Original DQN paper
         self.conv = nn.Sequential(nn.Conv2d(4, 32, 8, stride=4),
                                   nn.ReLU(),
                                   nn.Conv2d(32, 64, 4, stride=2),
@@ -62,7 +59,9 @@ class ActorCritic(nn.Module):
                                   nn.Conv2d(64, 64, 3, stride=1),
                                   nn.ReLU())
 
-        self.fc = nn.Sequential(nn.Linear(64 * 7 * 7, 512),
+        self.output_size = 64 * 7 * 7
+
+        self.lin = nn.Sequential(nn.Linear(self.output_size, 512),
                                 nn.ReLU())
 
         self.a = nn.Linear(512, num_actions)
@@ -75,12 +74,13 @@ class ActorCritic(nn.Module):
         self.a.weight.data = ortho_weights(self.a.weight.size(), scale=.01)
         self.c.weight.data = ortho_weights(self.c.weight.size())
 
-    def forward(self, conv_in):
-        N = conv_in.size()[0]
+    def forward(self, x):
+        #obtaining the right dimension
+        bs = x.size()[0]
 
-        conv_out = self.conv(conv_in).view(N, 64 * 7 * 7)
+        conv_out = self.conv(bs).view(bs, self.output_size)
 
-        fc_out = self.fc(conv_out)
+        fc_out = self.lin(conv_out)
 
         a = self.a(fc_out)
         c = self.c(fc_out)
