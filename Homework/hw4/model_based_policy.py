@@ -1,5 +1,7 @@
 import os
 import tensorflow as tf
+import tensorflow.train as optim
+import tensorflow.losses as lossF
 import numpy as np
 
 import utils
@@ -70,18 +72,18 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 1x$
         ### YOUR CODE HERE
-        state_norm = utils.normalize(state, self._init_dataset.state_mean, self._init_dataset.state_std)
-        action_norm = utils.normalize(action, self._init_dataset.action_mean, self._init_dataset.action_std)
-        input_layer = tf.concat([state_norm, action_norm], axis=1)
-        delta_pred_norm = utils.build_mlp(
-            input_layer, 
+        normalized_state = utils.normalize(state, self._init_dataset.state_mean, self._init_dataset.state_std)
+        normalized_action = utils.normalize(action, self._init_dataset.action_mean, self._init_dataset.action_std)
+        con_layers = tf.concat([normalized_state, normalized_action], axis=1)
+        pred_norm = utils.build_mlp(
+            con_layers, 
             self._state_dim, 
             scope='dynamics_func',
             n_layers=self._nn_layers,
             reuse=reuse
         )
-        delta_pred = utils.unnormalize(delta_pred_norm, self._init_dataset.delta_state_mean, self._init_dataset.delta_state_std)
-        next_state_pred = state + delta_pred
+        pred = utils.unnormalize(pred_norm, self._init_dataset.delta_state_mean, self._init_dataset.delta_state_std)
+        next_state_pred = state + pred
 
         return next_state_pred
 
@@ -105,12 +107,12 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 1
         ### YOUR CODE HERE
-        diff = next_state_ph - state_ph
-        diff_pred = next_state_pred - state_ph
-        diff_norm = utils.normalize(diff, self._init_dataset.delta_state_mean, self._init_dataset.delta_state_std)
-        diff_pred_norm = utils.normalize(diff_pred, self._init_dataset.delta_state_mean, self._init_dataset.delta_state_std)
-        loss = tf.losses.mean_squared_error(diff_norm, diff_pred_norm)
-        optimizer = tf.train.AdamOptimizer(self._learning_rate).minimize(loss)
+        state_diff= next_state_ph - state_ph
+        state_pred_diff = next_state_pred - state_ph
+        state_diff_norm = utils.normalize(state_diff, self._init_dataset.delta_state_mean, self._init_dataset.delta_state_std)
+        state_pred_diff_norm = utils.normalize(state_pred_diff, self._init_dataset.delta_state_mean, self._init_dataset.delta_state_std)
+        loss = lossF.mean_squared_error(state_diff_norm, state_pred_diff_norm)
+        optimizer = optim.AdamOptimizer(self._learning_rate).minimize(loss)
 
         return loss, optimizer
 
@@ -143,18 +145,14 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 2
         ### YOUR CODE HERE
-        actions = tf.random_uniform(
-            shape=[self._num_random_action_selection, self._horizon, self._action_dim],
-            minval=self._action_space_low,
-            maxval=self._action_space_high
-        )
-        costs = tf.zeros(self._num_random_action_selection)
-        states = tf.stack([state_ph[0]] * self._num_random_action_selection)
-        for t in range(self._horizon):
-            next_states = self._dynamics_func(states, actions[:, t, :], True)
-            costs += self._cost_fn(states, actions[:, t, :], next_states)
-            states = next_states
-        best_action = actions[tf.argmin(costs)][0]
+        ac = tf.random_uniform(shape=[self._num_random_action_selection, self._horizon, self._action_dim], minval=self._action_space_low, maxval=self._action_space_high)
+        co = tf.zeros(self._num_random_action_selection)
+        st = tf.stack([state_ph[0]] * self._num_random_action_selection)
+        for horizon_i in range(self._horizon):
+            next_st = self._dynamics_func(st, ac[:, horizon_i, :], True)
+            co += self._cost_fn(st, ac[:, horizon_i, :], next_st)
+            st = next_st
+        best_action = ac[tf.argmin(co)][0]
         return best_action
 
     def _setup_graph(self):
